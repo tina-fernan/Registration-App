@@ -9,9 +9,12 @@ exports.login = function(req, res)
         req.session.save(function(){
             res.redirect('/')
         })
-    }).catch(function(err){
+    }).catch(function(e){
+        req.flash('errors', e)
+        req.session.save(function(){
+            res.redirect('/')
 
-        res.send(err)
+        })
     })
 
 }
@@ -46,6 +49,6 @@ exports.home = function(req, res){
         res.render('home-dashboard', { username: req.session.user.username})
     } else {
         
-        res.render('home-guest')
+        res.render('home-guest', { errors: req.flash('errors')})
     }
 }
