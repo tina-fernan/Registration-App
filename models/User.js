@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs")
-const userCollection = require('../db').db().collection("users")
+const usersCollection = require('../db').db().collection("users")
 const validator=require('validator')
 
 
@@ -24,7 +24,8 @@ User.prototype.cleanUp = function(){
 
 }
 
-User.prototype.validate = async function(){
+User.prototype.validate = function(){
+   return new Promise(async (resolve, reject) => {
     if(this.data.username == ""){ this.errors.push("You must provide a username.")}
     if(this.data.username != "" && !validator.isAlphanumeric(this.data.username )){ this.errors.push("username can only contains letters and numbers.")}
 
@@ -37,17 +38,17 @@ User.prototype.validate = async function(){
 
     // Only if username is valid then check to see if it's already taken
     if (this.data.username.length > 2 && this.data.username.length < 31 && validator.isAlphanumeric(this.data.username)) {
-        let usernameExist = await usersCollection.findOne({username: this.data.username})
-        if (usernameExist) {this.errors.push("That username is already taken.")}
+        let usernameExists = await usersCollection.findOne({username: this.data.username})
+        if (usernameExists) {this.errors.push("That username is already taken.")}
     }
      // Only if email is valid then check to see if it's already taken
      if (validator.isEmail(this.data.email)) {
-        let emailExist = await usersCollection.findOne({email: this.data.email})
-        if (emailExist) {this.errors.push("That email is already taken.")
-            
-        }
+        let emailExists = await usersCollection.findOne({email: this.data.email})
+        if (emailExists) {this.errors.push("That email is already taken.")}
     }
-
+    resolve()
+    
+  })
 }
 
 User.prototype.login = function()
@@ -73,9 +74,10 @@ User.prototype.login = function()
 }
 
 User.prototype.register = function(){
+  return new Promise(async (resolve, reject) => {
     // Step #1: validate user data
     this.cleanUp()
-    this.validate()
+    await this.validate()
 
     // Step #2: only if there is no validation errors, 
     //then save the user data into a database
@@ -83,10 +85,14 @@ User.prototype.register = function(){
         // hash user password 
         let salt = bcrypt.genSaltSync(10)
         this.data.password = bcrypt.hashSync(this.data.password, salt)
-        userCollection.insertOne(this.data)
+        await usersCollection.insertOne(this.data)
+        resolve()
         
+    }else{
+       reject(this.errors)
     }
 
+  })
 
 }
 
