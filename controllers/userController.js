@@ -23,10 +23,13 @@ exports.login = function(req, res)
 exports.register= function(req, res){
    let user = new User(req.body)
    user.register()
-
    if (user.errors.length) {
-       res.send(user.errors)
-       
+    user.errors.forEach(function(error){
+        req.flash('regErrors', error)
+    })
+    req.session.save(function(){
+        res.redirect('/')
+    })    
    }
    else
    {
@@ -49,6 +52,6 @@ exports.home = function(req, res){
         res.render('home-dashboard', { username: req.session.user.username})
     } else {
         
-        res.render('home-guest', { errors: req.flash('errors')})
+        res.render('home-guest', { errors: req.flash('errors'), regErrors: req.flash('regErrors') })
     }
 }
